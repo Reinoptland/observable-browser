@@ -1,13 +1,3 @@
-import {
-  fromEvent,
-  debounceTime,
-  switchMap,
-  mergeMap,
-  tap,
-  catchError,
-} from "rxjs";
-import { fromFetch } from "rxjs/fetch";
-
 function displayError() {
   const results = document.getElementById("results");
   results.innerText = "Oh no, something went wrong!";
@@ -33,21 +23,20 @@ function displayResults(data) {
   });
 }
 
-const ONE_SECOND = 1000;
 const apiURL = "https://thecocktaildb.com/api/json/v1/1/search.php";
 
-const search = fromEvent(document.getElementById("search"), "keydown").pipe(
-  tap(() => displayLoading()),
-  debounceTime(ONE_SECOND),
-  switchMap((event) => fromFetch(`${apiURL}?s=${event.target.value}`)),
-  catchError(() => displayError()),
-  mergeMap((res) => res.json()),
-  tap((data) => (data.drinks ? displayResults(data) : displayNotFound()))
-);
+document.getElementById("search").addEventListener("keydown", async (event) => {
+  displayLoading();
+  try {
+    const res = await fetch(`${apiURL}?s=${event.target.value}`);
+    const data = await res.json();
 
-document.getElementById("search").addEventListener("focus", () => {
-  const subscription = search.subscribe();
-  document
-    .getElementById("search")
-    .addEventListener("blur", () => subscription.unsubscribe());
+    if (data.drinks) {
+      displayResults(data);
+    } else {
+      displayNotFound();
+    }
+  } catch (err) {
+    displayError();
+  }
 });
